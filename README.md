@@ -72,6 +72,48 @@ INPAINT_SEQ="A50-56/A59-59/A61-62"
 - **'q'** → Exit editing mode
 - **Ctrl+C** → Emergency exit
 
+## Example Walkthrough
+
+### Step-by-Step Example with ASNase.pdb
+
+After cloning the repository, you can try the example workflow:
+
+1. **Start the program**:
+   ```bash
+   python visual_RFD_input_manager.py
+   ```
+
+2. **Load the example protein structure**:
+   - When prompted for PDB file path, type: `ASNase.pdb`
+   - This will load the ASNase protein structure into PyMOL
+
+3. **Load the example configuration**:
+   - Choose option `2` (Load from saved file)
+   - Type: `asnase_example.txt`
+   - This will load predefined freeze settings with:
+     - Green sticks: Fully frozen residues (backbone + type)
+     - Orange lines: Backbone-only frozen residues
+     - Cyan cartoon: Flexible regions
+
+4. **Interactive editing**:
+   - Choose option `1` (Interactive editing)
+   - Click on residues in PyMOL to select them
+   - Type commands directly in PyMOL command line:
+     - `bt` = Backbone + Type frozen (green sticks)
+     - `b` = Backbone only frozen (orange lines)  
+     - `n` = Not frozen (cyan cartoon)
+     - `q` = Quit editing mode
+
+5. **Save your modifications**:
+   - Return to main menu and choose option `3` (Save settings)
+   - Type: `asnase_my_example.txt`
+   - This saves your customized CONTIGS and INPAINT_SEQ settings
+
+### PyMOL Commands Reference
+- **Menu navigation**: Type `1`, `2`, `3`, `4`, or `5` in PyMOL
+- **File operations**: Type `file filename.txt` in PyMOL 
+- **Residue editing**: Type `bt`, `b`, `n`, or `q` in PyMOL
+
 ## Example Files
 - `ASNase.pdb` - Example protein structure
 - `asnase_example.txt` - Example configuration file
