@@ -88,7 +88,7 @@ After cloning the repository, you can try the example workflow:
    - This will load the ASNase protein structure into PyMOL
 
 3. **Load the example configuration**:
-   - Choose option `4` (Load from saved file)
+   - Choose option `2` (Load from saved file, may be a different number in other menus)
    - Type: `file asnase_example.txt`
    - This will load predefined freeze settings with:
      - Green sticks: Fully frozen residues (backbone + type)
@@ -105,7 +105,7 @@ After cloning the repository, you can try the example workflow:
      - `q` = Quit editing mode
 
 5. **Save your modifications**:
-   - Return to main menu and choose option `3` (Save settings)
+   - Return to main menu (`q`) and choose option `3` (Save settings)
    - Type: `file asnase_my_example.txt`
    - This saves your customized CONTIGS and INPAINT_SEQ settings
 
