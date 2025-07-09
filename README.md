@@ -88,7 +88,7 @@ After cloning the repository, you can try the example workflow:
    - This will load the ASNase protein structure into PyMOL
 
 3. **Load the example configuration**:
-   - Choose option `2` (Load from saved file)
+   - Choose option `4` (Load from saved file)
    - Type: `file asnase_example.txt`
    - This will load predefined freeze settings with:
      - Green sticks: Fully frozen residues (backbone + type)
