@@ -1,20 +1,49 @@
-EOF
-  # Python cache files
-  __pycache__/
-  *.pyc
-  *.pyo
-  *.pyd
-  .Python
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache/
 
-  # PyMOL session files
-  *.pse
+# PyMOL files
+*.pse
+*.psw
 
-  # Temporary files
-  *.tmp
-  *.temp
-  .DS_Store
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.bak
+*~
 
-  # IDE files
-  .vscode/
-  .idea/
-  EOF
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Log files
+*.log
+
+# Environment files
+.env
+.venv
+env/
+venv/
+
+# Output files that shouldn't be tracked
+*.out
+*.err
+output/
+results/
