@@ -4,11 +4,12 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 
 ## Features
 
-- **Universal PDB support** - Works with any protein structure
 - **Visual residue selection** - Click residues in PyMOL to set freeze status
 - **Real-time feedback** - Instant visual updates with color coding
 - **Flexible input** - Load from .sbatch files, saved configurations, or start empty
 - **Export ready** - Generates CONTIGS and INPAINT_SEQ for RFDiffusion
+
+! Exports only the frozen contigs, does not output contigs RFDiffusion should generate, must be added by user later !
 
 ## Installation
 
@@ -21,7 +22,6 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 ```bash
 git clone https://github.com/stetinam/RFDiffiusion-Visual-Input-Manager.git
 cd RFDiffiusion-Visual-Input-Manager
-python visual_RFD_input_manager.py
 ```
 
 ## Usage
@@ -32,7 +32,7 @@ python visual_RFD_input_manager.py
 ```
 
 ### Workflow
-1. **Load PDB** → Enter path to any PDB file (or '5' to exit)
+1. **Load PDB** → Enter path to any PDB file (enter this and everything into PyMOL directly!)
 2. **Choose initial settings** → Load from .sbatch file, saved file, or start empty
 3. **Interactive editing** → Click residues in PyMOL and set freeze status
 4. **Save settings** → Export CONTIGS and INPAINT_SEQ
@@ -70,7 +70,7 @@ INPAINT_SEQ="A50-56/A59-59/A61-62"
 ## Exit Options
 - **'5'** → Exit at any menu
 - **'q'** → Exit editing mode
-- **Ctrl+C** → Emergency exit
+- **Ctrl+C** → Emergency exit in command line
 
 ## Example Walkthrough
 
@@ -84,12 +84,12 @@ After cloning the repository, you can try the example workflow:
    ```
 
 2. **Load the example protein structure**:
-   - When prompted for PDB file path, type: `ASNase.pdb`
+   - When prompted for PDB file path, type: `file ASNase.pdb` diretly into PyMOL
    - This will load the ASNase protein structure into PyMOL
 
 3. **Load the example configuration**:
    - Choose option `2` (Load from saved file)
-   - Type: `asnase_example.txt`
+   - Type: `file asnase_example.txt`
    - This will load predefined freeze settings with:
      - Green sticks: Fully frozen residues (backbone + type)
      - Orange lines: Backbone-only frozen residues
@@ -106,7 +106,7 @@ After cloning the repository, you can try the example workflow:
 
 5. **Save your modifications**:
    - Return to main menu and choose option `3` (Save settings)
-   - Type: `asnase_my_example.txt`
+   - Type: `file asnase_my_example.txt`
    - This saves your customized CONTIGS and INPAINT_SEQ settings
 
 ### PyMOL Commands Reference
