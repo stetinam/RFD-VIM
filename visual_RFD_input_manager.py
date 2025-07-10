@@ -16,6 +16,7 @@ import argparse
 import threading
 import time
 from collections import defaultdict
+from contextlib import contextmanager
 
 class UniversalRFDiffusionVisualizer:
     def __init__(self):
@@ -25,6 +26,7 @@ class UniversalRFDiffusionVisualizer:
         # Track residue states: 'BT' = backbone+type frozen, 'B' = backbone only, 'N' = not frozen
         self.residue_states = {}  # {(chain, resnum): state}
         self.protein_residues = set()  # All protein residues available
+        self._pymol_initialized = False
         
         self.init_pymol()
         
@@ -42,6 +44,7 @@ class UniversalRFDiffusionVisualizer:
             # Set up custom PyMOL commands for menu navigation
             self.setup_pymol_commands()
             
+            self._pymol_initialized = True
             print("PyMOL initialized successfully")
             
         except Exception as e:
@@ -106,11 +109,13 @@ class UniversalRFDiffusionVisualizer:
         
         # Start a thread to wait for terminal input
         terminal_input = None
+        stop_input_thread = threading.Event()
+        
         def get_terminal_input():
             nonlocal terminal_input
             try:
                 terminal_input = input().strip()
-            except:
+            except (EOFError, KeyboardInterrupt):
                 pass
                 
         input_thread = threading.Thread(target=get_terminal_input)
@@ -119,7 +124,7 @@ class UniversalRFDiffusionVisualizer:
         
         # Wait for either terminal input or PyMOL command
         while True:
-            time.sleep(0.1)  # Small delay to avoid busy waiting
+            time.sleep(0.05)  # Reduced delay for better responsiveness
             
             # Check if PyMOL command was entered
             if self.pymol_choice is not None:
@@ -138,6 +143,8 @@ class UniversalRFDiffusionVisualizer:
                     print(f"Invalid choice: {terminal_input}. Valid options: {valid_choices}")
                     # Restart input thread
                     terminal_input = None
+                    if input_thread.is_alive():
+                        input_thread.join(timeout=0.1)
                     input_thread = threading.Thread(target=get_terminal_input)
                     input_thread.daemon = True
                     input_thread.start()
@@ -171,6 +178,10 @@ class UniversalRFDiffusionVisualizer:
             print(f"Error: PDB file '{pdb_file}' not found")
             return False
             
+        # Validate file extension
+        if not pdb_file.lower().endswith(('.pdb', '.pdb.gz', '.ent')):
+            print(f"Warning: '{pdb_file}' may not be a valid PDB file")
+            
         return self.load_pdb(pdb_file)
         
     def load_pdb(self, pdb_file):
@@ -195,6 +206,10 @@ class UniversalRFDiffusionVisualizer:
             # Use PyMOL's built-in stored object
             from pymol import stored
             stored.residues = []
+            
+            # Clear any existing stored data
+            if hasattr(stored, 'selected_residues'):
+                stored.selected_residues = []
             
             cmd.iterate("protein_residues", "stored.residues.append((chain, resi))")
             
@@ -409,8 +424,8 @@ class UniversalRFDiffusionVisualizer:
                 cmd.show("sticks", "ligand")
                 cmd.set_color("ligand_purple", [0.6, 0.2, 0.8])
                 cmd.color("ligand_purple", "ligand")
-        except:
-            pass
+        except Exception as e:
+            print(f"Warning: Error handling ligand: {e}")
             
         cmd.deselect()
         
@@ -435,7 +450,7 @@ class UniversalRFDiffusionVisualizer:
             stored.selected_residues = []
             
             # Small delay to ensure PyMOL processes the clearing
-            time.sleep(0.05)
+            time.sleep(0.02)
             
             # Additional step: attempt to clear the selection via mouse mode
             cmd.mouse('three_button_viewing')
@@ -472,7 +487,7 @@ class UniversalRFDiffusionVisualizer:
         
         try:
             while True:
-                time.sleep(0.1)  # Small delay to avoid busy waiting
+                time.sleep(0.05)  # Reduced delay for better responsiveness
                 
                 # Check if user typed 'done' or 'q' in PyMOL
                 if self.pymol_choice:
@@ -550,7 +565,7 @@ class UniversalRFDiffusionVisualizer:
                                 print("Waiting for choice (BT/B/N/Q)...")
                                 choice_made = False
                                 while not choice_made:
-                                    time.sleep(0.1)
+                                    time.sleep(0.05)
                                     
                                     # Check for PyMOL command
                                     if self.pymol_choice:
@@ -713,13 +728,20 @@ class UniversalRFDiffusionVisualizer:
             
         try:
             # Make sure directory exists
-            os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
+            dir_path = os.path.dirname(os.path.abspath(filename))
+            if dir_path:  # Only create if directory path exists
+                os.makedirs(dir_path, exist_ok=True)
             
-            with open(filename, 'w') as f:
-                f.write(f'CONTIGS="{contigs_str}"\n')
-                f.write(f'INPAINT_SEQ="{inpaint_str}"\n')
-            print(f"Settings saved to {filename}")
-            return True
+            # Use context manager for safe file writing
+            try:
+                with open(filename, 'w') as f:
+                    f.write(f'CONTIGS="{contigs_str}"\n')
+                    f.write(f'INPAINT_SEQ="{inpaint_str}"\n')
+                print(f"Settings saved to {filename}")
+                return True
+            except IOError as io_error:
+                print(f"I/O error writing to {filename}: {io_error}")
+                return False
         except Exception as e:
             print(f"Error saving to {filename}: {e}")
             import traceback
@@ -739,9 +761,9 @@ class UniversalRFDiffusionVisualizer:
             cmd.reinitialize()
             cmd.set("ray_opaque_background", "off")
             cmd.set("antialias", 2)
-            time.sleep(1)  # Allow graphics to initialize
-        except:
-            pass
+            time.sleep(0.5)  # Allow graphics to initialize
+        except Exception as e:
+            print(f"Warning: Graphics initialization issue: {e}")
         
         # Now show the PDB file prompt after graphics initialization
         print("\nStep 1: Load PDB file")
@@ -893,6 +915,23 @@ class UniversalRFDiffusionVisualizer:
         print(f"  Not frozen (N): {n_count} residues")
         
         self.visualize_current_states()
+    
+    def cleanup(self):
+        """Clean up PyMOL and other resources"""
+        if self._pymol_initialized:
+            try:
+                cmd.quit()
+                pymol.finish_launching()
+                self._pymol_initialized = False
+            except Exception as e:
+                print(f"Warning: Error during PyMOL cleanup: {e}")
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
+        return False
 
 def main():
     """Main function"""
@@ -918,17 +957,15 @@ def main():
         return
     
     try:
-        visualizer = UniversalRFDiffusionVisualizer()
-        visualizer.main_menu()
+        with UniversalRFDiffusionVisualizer() as visualizer:
+            visualizer.main_menu()
     except KeyboardInterrupt:
         print("\nExiting...")
-        cmd.quit()
-        pymol.finish_launching()
         sys.exit(0)
     except Exception as e:
         print(f"Error: {e}")
-        cmd.quit()
-        pymol.finish_launching()
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
