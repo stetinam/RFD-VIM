@@ -7,7 +7,7 @@ Works with any PDB file and a RFDiffusion input file containing CONTIGS and INPA
 This script allows you to visualize and edit residue states interactively in PyMOL.
 You can select residues, set their states (frozen backbone, AA tyoe or not frozen), and generate input strings for RFDiffusion.
 
-Usage: python universal_RFD_input.py
+Usage: python visual_RFD_input_manager.py
 """
 
 import sys
