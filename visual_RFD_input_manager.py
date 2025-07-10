@@ -2,7 +2,10 @@
 """
 Universal RFDiffusion Interactive Input Visualizer
 Click residues in PyMOL and type commands in PyMOL command line.
-Works with any PDB file and any RFDiffusion input file.
+Works with any PDB file and a RFDiffusion input file containing CONTIGS and INPAINT_SEQ.
+
+This script allows you to visualize and edit residue states interactively in PyMOL.
+You can select residues, set their states (frozen backbone, AA tyoe or not frozen), and generate input strings for RFDiffusion.
 
 Usage: python universal_RFD_input.py
 """
