@@ -55,6 +55,7 @@ python visual_RFD_input_manager.py
 4. Type `q` to finish editing
 
 ! You may select multiple residues with a PyMOL command, but it must be in following format !
+
 `select sele, protein & (resi 5,10,53-52)`
 - change the numbers to the positions you actually want to select and change freeze status
 
