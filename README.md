@@ -123,7 +123,7 @@ After cloning the repository, you can try the example workflow:
 - `ASNase.pdb` - Example protein structure
 - `asnase_example.txt` - Example configuration file
 
-## Disclaimer
+## Notice
 Made with assistance from Claude Code. 
 This PyMOL tool could interfere with some native PyMOL functions.
 
