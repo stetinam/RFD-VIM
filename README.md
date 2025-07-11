@@ -1,4 +1,4 @@
-# RFDiffiusion Visual Input Manager
+# RFD Visual Input Manager
 
 Interactive PyMOL tool for visually selecting protein residues to freeze in RFDiffusion workflows.
 
