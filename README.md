@@ -20,15 +20,15 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 
 ### Setup
 ```bash
-git clone https://github.com/stetinam/RFDiffiusion-Visual-Input-Manager.git
-cd RFDiffiusion-Visual-Input-Manager
+git clone https://github.com/stetinam/RFD-Visual-Input-Manager.git
+cd RFD-Visual-Input-Manager
 ```
 
 ## Usage
 
 ### Quick Start
 ```bash
-python visual_RFD_input_manager.py
+python rfd_visual_input_manager.py
 ```
 
 ### Workflow
@@ -85,7 +85,7 @@ After cloning the repository, you can try the example workflow:
 
 1. **Start the program**:
    ```bash
-   python visual_RFD_input_manager.py
+   python rfd_visual_input_manager.py
    ```
 
 2. **Load the example protein structure**:
