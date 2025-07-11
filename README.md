@@ -9,7 +9,7 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 - **Flexible input** - Load from .sbatch files, saved configurations, or start empty
 - **Export ready** - Generates CONTIGS and INPAINT_SEQ for RFDiffusion
 
-! Exports only the frozen contigs, does not output contigs RFDiffusion should generate, must be added by user later !
+! Exports only the frozen contigs, does not output segments RFDiffusion should generate, must be added by user later !
 
 ## Installation
 
