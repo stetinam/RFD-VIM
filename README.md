@@ -1,4 +1,4 @@
-# RFDiffiusion Visual Input Manager
+# RFD Visual Input Manager
 
 Interactive PyMOL tool for visually selecting protein residues to freeze in RFDiffusion workflows.
 
@@ -53,6 +53,11 @@ python visual_RFD_input_manager.py
 2. Type residue state in PyMOL (`bt`, `b`, or `n`)
 3. Changes apply instantly
 4. Type `q` to finish editing
+
+! You may select multiple residues with a PyMOL command, but it must be in following format !
+
+`select sele, protein & (resi 5,10,53-52)`
+- change the numbers to the positions you actually want to select and change freeze status
 
 ## File Operations
 - **Load**: .sbatch files (auto-extracts CONTIGS/INPAINT_SEQ) or .txt files
