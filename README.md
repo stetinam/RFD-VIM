@@ -1,4 +1,4 @@
-# RFD Visual Input Manager
+# RFD-VIM (RFDiffusion Visual Input Manager)
 
 Interactive PyMOL tool for visually selecting protein residues to freeze in RFDiffusion workflows.
 
@@ -20,15 +20,15 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 
 ### Setup
 ```bash
-git clone https://github.com/stetinam/RFD-Visual-Input-Manager.git
-cd RFD-Visual-Input-Manager
+git clone https://github.com/stetinam/rfd-vim.git
+cd rfd-vim
 ```
 
 ## Usage
 
 ### Quick Start
 ```bash
-python rfd_visual_input_manager.py
+python rfd-vim.py
 ```
 
 ### Workflow
@@ -85,7 +85,7 @@ After cloning the repository, you can try the example workflow:
 
 1. **Start the program**:
    ```bash
-   python rfd_visual_input_manager.py
+   python rfd-vim.py
    ```
 
 2. **Load the example protein structure**:

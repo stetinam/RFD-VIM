@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Universal RFDiffusion Interactive Input Visualizer
+RFD-VIM (RFDiffusion Visual Input Manager)
 Click residues in PyMOL and type commands in PyMOL command line.
 Works with any PDB file and a RFD input file containing CONTIGS and INPAINT_SEQ.
 
 This script allows you to visualize and edit residue states interactively in PyMOL.
 You can select residues, set their states (frozen backbone, frozen backbone and AA type, or not frozen), and generate input strings for RFDiffusion.
 
-Usage: python rfd_visual_input_manager.py
+Usage: python rfd-vim.py
 """
 
 import sys
@@ -21,7 +21,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 
-class UniversalRFDVisualizer:
+class RFDVIMVisualizer:
     def __init__(self):
         self.pdb_file = None
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -754,7 +754,7 @@ class UniversalRFDVisualizer:
     def main_menu(self):
         """Main interactive menu"""
         print("\n" + "="*60)
-        print("Universal RFD Interactive Visualizer")
+        print("RFD-VIM (RFDiffusion Visual Input Manager)")
         print("="*60)
         print(f"Working directory: {self.current_dir}")
         
@@ -938,18 +938,18 @@ class UniversalRFDVisualizer:
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description='Universal RFD Interactive Visualizer')
+    parser = argparse.ArgumentParser(description='RFD-VIM (RFDiffusion Visual Input Manager)')
     parser.add_argument('--help-usage', action='store_true', help='Show detailed usage information')
     
     args = parser.parse_args()
     
     if args.help_usage:
-        print("Universal RFD Interactive Visualizer")
+        print("RFD-VIM (RFDiffusion Visual Input Manager)")
         print("=" * 50)
         print("This tool allows you to interactively edit RFDiffusion CONTIGS and INPAINT_SEQ parameters")
         print("for any protein structure and any input configuration.")
         print("")
-        print("Usage: python rfd_visual_input_manager.py")
+        print("Usage: python rfd-vim.py")
         print("")
         print("Features:")
         print("- Load any PDB file")
@@ -960,7 +960,7 @@ def main():
         return
     
     try:
-        with UniversalRFDVisualizer() as visualizer:
+        with RFDVIMVisualizer() as visualizer:
             visualizer.main_menu()
     except KeyboardInterrupt:
         print("\nExiting...")
