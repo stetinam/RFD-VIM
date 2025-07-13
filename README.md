@@ -124,7 +124,7 @@ After cloning the repository, you can try the example workflow:
 - `asnase_example.txt` - Example configuration file
 
 ## Notice
-Made with assistance from Claude Code. 
+Made with assistance from Claude Code. Double check output before use.
 This PyMOL tool could interfere with some native PyMOL functions.
 
 ## License
