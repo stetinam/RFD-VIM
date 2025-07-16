@@ -35,6 +35,7 @@ Thumbs.db
 
 # Log files
 *.log
+CLAUDE.md
 
 # Environment files
 .env
