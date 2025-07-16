@@ -49,10 +49,10 @@ python rfd-vim.py
 - **q** = Exit editing mode
 
 ### Edit Workflow
-1. Select residues in PyMOL (click single or multiple)
-2. Type residue state in PyMOL (`bt`, `b`, or `n`)
-3. Changes apply instantly
-4. Type `q` to finish editing
+1. Select residues in PyMOL (click in the structure, select in sequence or use a command, see bellow)
+3. Type residue state in PyMOL (`bt`, `b`, or `n`)
+4. Changes apply instantly
+5. Type `q` to finish editing
 
 ! You may select multiple residues with a PyMOL command, but it must be in following format !
 
