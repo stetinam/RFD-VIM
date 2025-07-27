@@ -32,12 +32,13 @@ python rfd-vim.py
 ```
 
 ### Workflow
-1. **Load PDB** → Enter path to any PDB file (enter this and everything into PyMOL directly!)
+1. **Load PDB** → Type `file filename.pdb` or `fetch PDB_ID` directly in PyMOL
 2. **Choose initial settings** → Load from .sbatch file, saved file, or start empty
 3. **Interactive editing** → Click residues in PyMOL and set freeze status
 4. **Save settings** → Export CONTIGS and INPAINT_SEQ
 
 ### PyMOL Commands
+- **Structure loading**: `file filename.pdb`, `fetch PDB_ID`
 - **Menu options**: `1`, `2`, `3`, `4`, `5`
 - **File operations**: `file "filename.txt"` (replace filename with actual path)
 - **Residue editing**: `bt`, `b`, `n`, `q`
@@ -89,7 +90,7 @@ After cloning the repository, you can try the example workflow:
    ```
 
 2. **Load the example protein structure**:
-   - When prompted for PDB file path, type: `file ASNase.pdb` diretly into PyMOL
+   - When prompted, type: `file ASNase.pdb` directly into PyMOL
    - This will load the ASNase protein structure into PyMOL
 
 3. **Load the example configuration**:
@@ -115,6 +116,7 @@ After cloning the repository, you can try the example workflow:
    - This saves your customized CONTIGS and INPAINT_SEQ settings
 
 ### PyMOL Commands Reference
+- **Structure loading**: Type `file filename.pdb` or `fetch PDB_ID` in PyMOL
 - **Menu navigation**: Type `1`, `2`, `3`, `4`, or `5` in PyMOL
 - **File operations**: Type `file filename.txt` in PyMOL 
 - **Residue editing**: Type `bt`, `b`, `n`, or `q` in PyMOL

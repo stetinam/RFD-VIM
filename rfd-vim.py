@@ -76,10 +76,21 @@ class RFDVIMVisualizer:
             self.pymol_choice = 'done'
             print("Editing mode finished")
         
-        # Unified function for file input (save/load paths)
+        # Command handlers for different modes
         def file(filename):
-            self.pymol_choice = str(filename)
-            print(f"File path received: {filename}")
+            if self.pymol_input_mode == 'loading':
+                self.pymol_choice = f"file {filename}"
+                print(f"Loading file: {filename}")
+            else:
+                self.pymol_choice = str(filename)
+                print(f"File path received: {filename}")
+                
+        def fetch(pdb_id):
+            if self.pymol_input_mode == 'loading':
+                self.pymol_choice = f"fetch {pdb_id}"
+                print(f"Fetching PDB: {pdb_id}")
+            else:
+                print("Fetch command not available in this mode")
             
         # Register commands in PyMOL (both lowercase and uppercase)
         cmd.extend('menu', menu_choice)
@@ -93,6 +104,7 @@ class RFDVIMVisualizer:
         cmd.extend('Q', lambda: residue_state('Q'))
         cmd.extend('done', done_editing)
         cmd.extend('file', file)
+        cmd.extend('fetch', fetch)
         
         # Add number shortcuts for menu
         for i in range(1, 6):
@@ -100,12 +112,13 @@ class RFDVIMVisualizer:
             
     def get_input(self, prompt, valid_choices=None, allow_string=True):
         """Get input from PyMOL command line or terminal"""
-        if "file" in prompt.lower():
-            print(f"{prompt}")
-            print("Type 'file filename' in PyMOL (replace 'filename' with your actual file path)")
-        else:
-            print(f"{prompt}")
-            print("Type in PyMOL.")
+        print(f"{prompt}")
+        # Only add instruction if not already in the prompt
+        if "Type in PyMOL" not in prompt:
+            if "file" in prompt.lower():
+                print("Type 'file filename' in PyMOL (replace 'filename' with your actual file path)")
+            else:
+                print("Type in PyMOL.")
         
         # Reset PyMOL choice
         self.pymol_choice = None
@@ -160,17 +173,44 @@ class RFDVIMVisualizer:
                 input_thread.start()
             
     def browse_pdb_file(self):
-        """Allow user to browse and select a PDB file"""
-        pdb_file = self.get_input("Enter PDB file path (or '5' to exit): ", allow_string=True).strip()
-        if not pdb_file:
-            return False
+        """Allow user to load PDB file or fetch from PDB with streamlined input"""
+        print("\n" + "="*50)
+        print("STEP 1: LOAD PROTEIN STRUCTURE")
+        print("="*50)
+        print("Commands:")
+        print("  file filename.pdb    - Load local PDB file")
+        print("  fetch PDB_ID         - Fetch from PDB (4-char ID)")
+        print("  5                    - Exit program")
+        
+        # Set mode for PyMOL command handlers
+        self.pymol_input_mode = 'loading'
+        
+        while True:
+            user_input = self.get_input("\nEnter command (Type in PyMOL): ", allow_string=True).strip()
             
-        # Check for exit option
-        if pdb_file == '5':
-            print("Goodbye!")
-            cmd.quit()
-            pymol.finish_launching()
-            sys.exit(0)
+            if not user_input:
+                continue
+                
+            # Handle direct PyMOL commands (file/fetch) or terminal input
+            if user_input.startswith('file '):
+                parts = user_input.split(None, 1)
+                if len(parts) == 2:
+                    return self.load_local_pdb(parts[1])
+            elif user_input.startswith('fetch '):
+                parts = user_input.split(None, 1)
+                if len(parts) == 2:
+                    return self.fetch_pdb_structure(parts[1])
+            elif user_input == '5':
+                print("Goodbye!")
+                cmd.quit()
+                pymol.finish_launching()
+                sys.exit(0)
+            else:
+                print("Invalid command. Use: 'file filename.pdb', 'fetch 1ABC', or '5'")
+                
+    def load_local_pdb(self, pdb_file):
+        """Load a local PDB file"""
+        print(f"\nLoading local PDB file: {pdb_file}")
             
         # Check if file exists
         if not os.path.isabs(pdb_file):
@@ -186,6 +226,65 @@ class RFDVIMVisualizer:
             print(f"Warning: '{pdb_file}' may not be a valid PDB file")
             
         return self.load_pdb(pdb_file)
+        
+    def fetch_pdb_structure(self, pdb_id):
+        """Fetch a PDB structure from the Protein Data Bank"""
+        pdb_id = pdb_id.strip().upper()
+        
+        # Validate PDB ID format
+        if len(pdb_id) != 4 or not pdb_id.isalnum():
+            print(f"Error: '{pdb_id}' is not a valid PDB ID (must be 4 alphanumeric characters)")
+            return False
+            
+        try:
+            print(f"Fetching PDB structure {pdb_id}...")
+            cmd.delete("all")
+            cmd.fetch(pdb_id, "protein")
+            cmd.show("cartoon", "protein")
+            cmd.color("cyan", "protein")
+            cmd.zoom("protein")
+            
+            # Set the pdb_file to indicate it was fetched
+            self.pdb_file = f"PDB:{pdb_id}"
+            
+            # Discover all protein residues (same as load_pdb)
+            cmd.select("protein_residues", "protein and polymer")
+            
+            from pymol import stored
+            stored.residues = []
+            
+            if hasattr(stored, 'selected_residues'):
+                stored.selected_residues = []
+            
+            cmd.iterate("protein_residues", "stored.residues.append((chain, resi))")
+            
+            for chain, resi in stored.residues:
+                key = (chain, int(resi))
+                self.protein_residues.add(key)
+                if key not in self.residue_states:
+                    self.residue_states[key] = 'N'
+                    
+            print(f"Successfully fetched PDB structure: {pdb_id}")
+            print(f"Found {len(self.protein_residues)} protein residues")
+            
+            # Color ligand purple if present
+            try:
+                cmd.select("ligand", "hetatm and not name HOH")
+                if cmd.count_atoms("ligand") > 0:
+                    cmd.show("sticks", "ligand")
+                    cmd.set_color("ligand_purple", [0.6, 0.2, 0.8])
+                    cmd.color("ligand_purple", "ligand")
+                    print("Ligand shown as purple sticks")
+                cmd.deselect()
+            except Exception as ligand_error:
+                print(f"Note: Could not process ligand: {ligand_error}")
+                
+            return True
+            
+        except Exception as e:
+            print(f"Error fetching PDB {pdb_id}: {e}")
+            print("Please check the PDB ID and your internet connection")
+            return False
         
     def load_pdb(self, pdb_file):
         """Load PDB file and discover all protein residues"""
@@ -768,13 +867,9 @@ class RFDVIMVisualizer:
         except Exception as e:
             print(f"Warning: Graphics initialization issue: {e}")
         
-        # Now show the PDB file prompt after graphics initialization
-        print("\nStep 1: Load PDB file")
-        print("Options:")
-        print("  - Enter PDB file path")
-        print("  - Type '5' to exit")
+        # Load PDB structure
         if not self.browse_pdb_file():
-            print("Failed to load PDB file. Exiting.")
+            print("Failed to load protein structure. Exiting.")
             return
         
         # Clear any PyMOL messages and show clean menu
