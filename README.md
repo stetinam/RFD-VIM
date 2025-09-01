@@ -1,5 +1,5 @@
 # RFD-VIM (RFDiffusion Visual Input Manager)
-> **9-2025_RFD-VIM:** This update added the ability to define a pocket region, generate reference structures for RMSD calculations and redesigns the menu layouts.
+> **9-2025_RFD-VIM:** Update with improved menu layouts and new functions: define a pocket region and generate reference structures for RMSD calculations.
 
 Interactive PyMOL tool for visually selecting protein residues to freeze in RFDiffusion and ProteinMPNN workflows. A faster, more intuitive, and human error-free alternative to manually examining protein structures and typing out RFDiffusion contig settings. Streamlines input generation for RFDiffusion, ProteinMPNN, and RMSD calculations in your protein design pipelines.
 
