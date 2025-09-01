@@ -3,6 +3,8 @@
 
 Interactive PyMOL tool for visually selecting protein residues to freeze in RFdiffusion and ProteinMPNN workflows. A faster, more intuitive, and human error-free alternative to manually examining protein structures and typing out RFdiffusion contig settings. Streamlines input generation for RFdiffusion, ProteinMPNN, and RMSD calculations in your protein design pipelines.
 
+<img width="868" height="720" alt="RFD-VIM_image" src="https://github.com/user-attachments/assets/900e48b4-7dbe-4319-bf2b-3d0c69e503ba" />
+
 ## Features
 
 - **Visual residue selection** - Click residues in PyMOL to freeze amino acid backbone or type
