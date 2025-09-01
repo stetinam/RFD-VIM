@@ -1,7 +1,7 @@
 # RFD-VIM (RFDiffusion Visual Input Manager)
 > **9-2025_RFD-VIM:** Update with improved menu layouts and new functions: define a pocket region and generate reference structures for RMSD calculations.
 
-Interactive PyMOL tool for visually selecting protein residues to freeze in RFDiffusion and ProteinMPNN workflows. A faster, more intuitive, and human error-free alternative to manually examining protein structures and typing out RFDiffusion contig settings. Streamlines input generation for RFDiffusion, ProteinMPNN, and RMSD calculations in your protein design pipelines.
+Interactive PyMOL tool for visually selecting protein residues to freeze in RFdiffusion and ProteinMPNN workflows. A faster, more intuitive, and human error-free alternative to manually examining protein structures and typing out RFdiffusion contig settings. Streamlines input generation for RFdiffusion, ProteinMPNN, and RMSD calculations in your protein design pipelines.
 
 ## Features
 
@@ -9,9 +9,9 @@ Interactive PyMOL tool for visually selecting protein residues to freeze in RFDi
 - **Pocket residue marking** - Define vital pocket (or just important for your function) residues
 - **Real-time feedback** - Instant visual updates with color coding, see your settings in real time
 - **Enhanced PyMOL sessions** - Save .pse files with RMSD reference objects for RMSD calculations
-- **Export ready** - Generates CONTIGS, INPAINT_SEQ, and POCKET_RESIDUES for RFDiffusion and ProteinMPNN workflows
+- **Export ready** - Generates CONTIGS, INPAINT_SEQ, and POCKET_RESIDUES for RFdiffusion and ProteinMPNN workflows
 
-> **Note:** Exports only the frozen contigs, does not output segments RFDiffusion should generate, must be added by user later
+> **Note:** Exports only the frozen contigs, does not output segments RFdiffusion should generate, must be added by user later
 
 ## Installation
 
@@ -87,7 +87,7 @@ When saving a .pse file, the following reference objects are automatically creat
 
 - **pocket_RMSD_ref** - Contains pocket residues for critical residue RMSD calculations (optional)
 - **MPNN_RMSD_ref** - Contains fully frozen residues (bt state) for MPNN comparison
-- **RFdiff_RMSD_ref** - Contains all frozen residues (bt + b states) for RFDiffusion RMSD
+- **RFdiff_RMSD_ref** - Contains all frozen residues (bt + b states) for RFdiffusion RMSD
 
 ### Usage
 > **Note:** Type all commands directly into PyMOL
