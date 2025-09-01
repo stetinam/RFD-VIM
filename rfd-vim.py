@@ -5,9 +5,10 @@ Click residues in PyMOL and type commands in PyMOL command line.
 Works with any PDB file and a RFD input file containing CONTIGS and INPAINT_SEQ.
 
 This script allows you to visualize and edit residue states interactively in PyMOL.
-You can select residues, set their states (frozen backbone, frozen backbone and AA type, pocket, or not frozen), and generate input strings for RFDiffusion.
+You can select residues, set their states (frozen backbone, frozen backbone and AA type, pocket, or not frozen),
+and generate input strings for RFDiffusion. You can also generate reference structures for RMSD calculations.
 
-Usage: python rfd-vim-pocket-pse.py
+Usage: python rfd-vim.py
 """
 
 import sys
