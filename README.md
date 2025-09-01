@@ -90,8 +90,8 @@ The PSE Edition includes enhanced PyMOL session saving with automatic RMSD refer
 When saving a .pse file, the following reference objects are automatically created:
 
 - **pocket_RMSD_ref** - Contains pocket residues for critical residue RMSD calculations (optional)
-- **MPNN_RMSD_ref** - Contains fully frozen residues (bt state) for MPNN comparison
-- **RFdiff_RMSD_ref** - Contains all frozen residues (bt + b states) for RFdiffusion RMSD
+- **MPNN_RMSD_ref** - Contains fully frozen residues (bt state) for comparison of amino acids whos type is frozen
+- **RFdiff_RMSD_ref** - Contains all frozen residues (bt + b states) for comparison of entire frozen backbone
 
 ### Usage
 > **Note:** Type all commands directly into PyMOL
