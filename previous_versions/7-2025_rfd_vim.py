@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-RFD-VIM (RFDiffusion Visual Input Manager) - PSE Edition
+RFD-VIM (RFDiffusion Visual Input Manager)
 Click residues in PyMOL and type commands in PyMOL command line.
 Works with any PDB file and a RFD input file containing CONTIGS and INPAINT_SEQ.
 
 This script allows you to visualize and edit residue states interactively in PyMOL.
-You can select residues, set their states (frozen backbone, frozen backbone and AA type, pocket, or not frozen), and generate input strings for RFDiffusion.
+You can select residues, set their states (frozen backbone, frozen backbone and AA type, or not frozen), and generate input strings for RFDiffusion.
 
-Usage: python rfd-vim-pocket-pse.py
+Usage: python rfd-vim.py
 """
 
 import sys
@@ -28,8 +28,6 @@ class RFDVIMVisualizer:
         
         # Track residue states: 'BT' = backbone+type frozen, 'B' = backbone only, 'N' = not frozen
         self.residue_states = {}  # {(chain, resnum): state}
-        # Track pocket residues separately (can overlap with other states)
-        self.pocket_residues = set()  # {(chain, resnum)} - residues marked as pocket
         self.protein_residues = set()  # All protein residues available
         self._pymol_initialized = False
         
@@ -70,10 +68,7 @@ class RFDVIMVisualizer:
         def residue_state(state):
             if self.pymol_input_mode == 'editing':
                 self.pymol_choice = str(state).upper()
-                if state.upper() == 'P':
-                    print(f"Pocket residue toggle selected in PyMOL")
-                else:
-                    print(f"Residue state {state} selected in PyMOL")
+                print(f"Residue state {state} selected in PyMOL")
             else:
                 print("Not in editing mode - press '1' to start editing mode")
                 
@@ -103,8 +98,6 @@ class RFDVIMVisualizer:
         cmd.extend('BT', lambda: residue_state('BT'))
         cmd.extend('b', lambda: residue_state('B'))  
         cmd.extend('B', lambda: residue_state('B'))
-        cmd.extend('p', lambda: residue_state('P'))  # New pocket command
-        cmd.extend('P', lambda: residue_state('P'))  # New pocket command
         cmd.extend('n', lambda: residue_state('N'))
         cmd.extend('N', lambda: residue_state('N'))
         cmd.extend('q', lambda: residue_state('Q'))
@@ -114,7 +107,7 @@ class RFDVIMVisualizer:
         cmd.extend('fetch', fetch)
         
         # Add number shortcuts for menu
-        for i in range(1, 7):  # Updated to include 6
+        for i in range(1, 6):
             cmd.extend(str(i), lambda x=i: menu_choice(x))
             
     def get_input(self, prompt, valid_choices=None, allow_string=True):
@@ -187,7 +180,7 @@ class RFDVIMVisualizer:
         print("Commands:")
         print("  file filename.pdb    - Load local PDB file")
         print("  fetch PDB_ID         - Fetch from PDB (4-char ID)")
-        print("  6                    - Exit program")
+        print("  5                    - Exit program")
         
         # Set mode for PyMOL command handlers
         self.pymol_input_mode = 'loading'
@@ -207,13 +200,13 @@ class RFDVIMVisualizer:
                 parts = user_input.split(None, 1)
                 if len(parts) == 2:
                     return self.fetch_pdb_structure(parts[1])
-            elif user_input == '6':
+            elif user_input == '5':
                 print("Goodbye!")
                 cmd.quit()
                 pymol.finish_launching()
                 sys.exit(0)
             else:
-                print("Invalid command. Use: 'file filename.pdb', 'fetch 1ABC', or '6'")  # Updated from '5' to '7'
+                print("Invalid command. Use: 'file filename.pdb', 'fetch 1ABC', or '5'")
                 
     def load_local_pdb(self, pdb_file):
         """Load a local PDB file"""
@@ -338,7 +331,7 @@ class RFDVIMVisualizer:
                     cmd.show("sticks", "ligand")
                     cmd.set_color("ligand_purple", [0.6, 0.2, 0.8])
                     cmd.color("ligand_purple", "ligand")
-                    print("Ligand showed as purple sticks")
+                    print("Ligand shown as purple sticks")
                 cmd.deselect()
             except Exception as ligand_error:
                 print(f"Note: Could not process ligand: {ligand_error}")
@@ -404,7 +397,6 @@ class RFDVIMVisualizer:
                 
             contigs = None
             inpaint_seq = None
-            pocket_residues = None
             
             # Try both regex and direct parsing for robustness
             for line in lines:
@@ -412,14 +404,11 @@ class RFDVIMVisualizer:
                 # Try regex match first
                 contigs_match = re.search(r'CONTIGS="([^"]*)"', line)
                 inpaint_match = re.search(r'INPAINT_SEQ="([^"]*)"', line)
-                pocket_match = re.search(r'POCKET_RESIDUES="([^"]*)"', line)
                 
                 if contigs_match:
                     contigs = contigs_match.group(1)
                 if inpaint_match:
                     inpaint_seq = inpaint_match.group(1)
-                if pocket_match:
-                    pocket_residues = pocket_match.group(1)
                 
                 # If regex fails, try direct parsing
                 if contigs is None and line.startswith('CONTIGS='):
@@ -441,21 +430,9 @@ class RFDVIMVisualizer:
                                 inpaint_seq = val[1:-1]
                     except:
                         pass
-                        
-                if pocket_residues is None and line.startswith('POCKET_RESIDUES='):
-                    try:
-                        parts = line.split('=', 1)
-                        if len(parts) > 1:
-                            val = parts[1].strip()
-                            if val.startswith('"') and val.endswith('"'):
-                                pocket_residues = val[1:-1]
-                    except:
-                        pass
                     
             if contigs is not None and inpaint_seq is not None:
                 self.parse_and_set_states(contigs, inpaint_seq)
-                if pocket_residues is not None:
-                    self.parse_pocket_residues(pocket_residues)
                 self.visualize_current_states()
                 print(f"Loaded settings from {os.path.basename(save_file)}")
                 return True
@@ -480,40 +457,26 @@ class RFDVIMVisualizer:
         parts = contigs_str.split('/')
         for part in parts:
             part = part.strip()
-            if part:
-                if '-' in part:
-                    # Handle chain letter + range (e.g., A2-15)
-                    chain_match = re.match(r'([A-Z])(\d+)-(\d+)', part)
-                    if chain_match:
-                        chain, start, end = chain_match.groups()
-                        for res in range(int(start), int(end) + 1):
-                            contigs_residues.add((chain, res))
-                else:
-                    # Handle single residue (e.g., A87)
-                    single_match = re.match(r'([A-Z])(\d+)', part)
-                    if single_match:
-                        chain, resnum = single_match.groups()
-                        contigs_residues.add((chain, int(resnum)))
+            if part and '-' in part:
+                # Handle chain letter + range (e.g., A2-15)
+                chain_match = re.match(r'([A-Z])(\d+)-(\d+)', part)
+                if chain_match:
+                    chain, start, end = chain_match.groups()
+                    for res in range(int(start), int(end) + 1):
+                        contigs_residues.add((chain, res))
                         
         # Parse INPAINT_SEQ - residues whose sequence can change
         inpaint_residues = set()
         parts = inpaint_str.split('/')
         for part in parts:
             part = part.strip()
-            if part:
-                if '-' in part:
-                    # Handle chain letter + range (e.g., A2-15)
-                    chain_match = re.match(r'([A-Z])(\d+)-(\d+)', part)
-                    if chain_match:
-                        chain, start, end = chain_match.groups()
-                        for res in range(int(start), int(end) + 1):
-                            inpaint_residues.add((chain, res))
-                else:
-                    # Handle single residue (e.g., A87)
-                    single_match = re.match(r'([A-Z])(\d+)', part)
-                    if single_match:
-                        chain, resnum = single_match.groups()
-                        inpaint_residues.add((chain, int(resnum)))
+            if part and '-' in part:
+                # Handle chain letter + range (e.g., A2-15)
+                chain_match = re.match(r'([A-Z])(\d+)-(\d+)', part)
+                if chain_match:
+                    chain, start, end = chain_match.groups()
+                    for res in range(int(start), int(end) + 1):
+                        inpaint_residues.add((chain, res))
                     
         # Set states based on membership
         for chain_res in contigs_residues:
@@ -525,39 +488,6 @@ class RFDVIMVisualizer:
                     
         print(f"Set {len([s for s in self.residue_states.values() if s == 'BT'])} fully frozen residues")
         print(f"Set {len([s for s in self.residue_states.values() if s == 'B'])} backbone-only frozen residues")
-        
-    def parse_pocket_residues(self, pocket_str):
-        """Parse POCKET_RESIDUES string and set pocket residues"""
-        # Clear current pocket residues
-        self.pocket_residues.clear()
-        
-        if not pocket_str:
-            return
-            
-        # Parse POCKET_RESIDUES - residues marked as pocket
-        parts = pocket_str.split('/')
-        for part in parts:
-            part = part.strip()
-            if part:
-                if '-' in part:
-                    # Handle chain letter + range (e.g., A2-15)
-                    chain_match = re.match(r'([A-Z])(\d+)-(\d+)', part)
-                    if chain_match:
-                        chain, start, end = chain_match.groups()
-                        for res in range(int(start), int(end) + 1):
-                            res_key = (chain, res)
-                            if res_key in self.protein_residues:
-                                self.pocket_residues.add(res_key)
-                else:
-                    # Handle single residue (e.g., A87)
-                    single_match = re.match(r'([A-Z])(\d+)', part)
-                    if single_match:
-                        chain, resnum = single_match.groups()
-                        res_key = (chain, int(resnum))
-                        if res_key in self.protein_residues:
-                            self.pocket_residues.add(res_key)
-                            
-        print(f"Set {len(self.pocket_residues)} pocket residues")
         
     def visualize_current_states(self):
         """Visualize current residue states in PyMOL"""
@@ -589,14 +519,6 @@ class RFDVIMVisualizer:
             cmd.set_color("frozen_orange", [1.0, 0.5, 0.0])
             cmd.color("frozen_orange", "frozen_b")
             
-        # Visualize pocket residues as dark green sticks (can overlap with other states)
-        if self.pocket_residues:
-            p_residues = [f"chain {chain} and resi {resnum}" for chain, resnum in self.pocket_residues]
-            cmd.select("pocket", " or ".join(p_residues))
-            cmd.show("sticks", "pocket")
-            cmd.set_color("dark_green", [0.0, 0.6, 0.0])
-            cmd.color("dark_green", "pocket")
-        
         # Ensure ligand remains visible
         try:
             cmd.select("ligand", "hetatm and not name HOH")
@@ -609,7 +531,7 @@ class RFDVIMVisualizer:
             
         cmd.deselect()
         
-        print(f"\nVisualized: {len(bt_residues)} fully frozen (green sticks), {len(b_residues)} backbone-only (orange lines), {len(self.pocket_residues)} pocket (dark green sticks)")
+        print(f"\nVisualized: {len(bt_residues)} fully frozen (green sticks), {len(b_residues)} backbone-only (orange lines)")
         
     def reset_selection_state(self):
         """Complete reset of selection state after each change"""
@@ -650,7 +572,6 @@ class RFDVIMVisualizer:
         print("2. Type choice in PyMOL:")
         print("   BT = Backbone + Type frozen (green sticks)")
         print("   B  = Backbone only frozen (orange lines)")
-        print("   P  = Toggle pocket residue (dark green sticks)")
         print("   N  = Not frozen (cyan cartoon)")
         print("   Q  = Quit editing mode")
         print("\nType 'q' in PyMOL to finish")
@@ -698,15 +619,13 @@ class RFDVIMVisualizer:
                                 unique_residues = []
                                 seen = set()
                                 for res in stored.selected_residues:
-                                    if res[0] in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:  # Only protein chains
+                                    if res not in seen and res[0] in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:  # Only protein chains
                                         try:
                                             chain, resnum = res
                                             # Ensure resnum is an integer
                                             resnum = int(resnum)
-                                            res_key = (chain, resnum)
-                                            if res_key not in seen:
-                                                unique_residues.append(res_key)
-                                                seen.add(res_key)
+                                            unique_residues.append((chain, resnum))
+                                            seen.add((chain, resnum))
                                         except (ValueError, TypeError):
                                             # Skip invalid residue numbers
                                             continue
@@ -720,21 +639,15 @@ class RFDVIMVisualizer:
                                 if len(unique_residues) == 1:
                                     chain, resnum = unique_residues[0]
                                     current_state = self.residue_states.get((chain, resnum), 'N')
-                                    is_pocket = (chain, resnum) in self.pocket_residues
                                     print(f"\nSelected: Chain {chain}, Residue {resnum}")
                                     print(f"Current status: {self.get_state_description(current_state)}")
-                                    if is_pocket:
-                                        print(f"  Also marked as POCKET residue")
                                 else:
                                     print(f"\nSelected {len(unique_residues)} residues:")
                                     # Count residues by state
                                     state_counts = {'BT': 0, 'B': 0, 'N': 0}
-                                    pocket_count = 0
                                     for chain, resnum in unique_residues:
                                         state = self.residue_states.get((chain, resnum), 'N')
                                         state_counts[state] += 1
-                                        if (chain, resnum) in self.pocket_residues:
-                                            pocket_count += 1
                                         
                                     # Print first few and summary
                                     print(f"  First few: ", end="")
@@ -749,11 +662,9 @@ class RFDVIMVisualizer:
                                         print("")
                                         
                                     print(f"  Current states: {state_counts['BT']} fully frozen, {state_counts['B']} backbone-only, {state_counts['N']} not frozen")
-                                    if pocket_count > 0:
-                                        print(f"  Pocket residues: {pocket_count}")
                                 
                                 # Wait for state choice
-                                print("Waiting for choice (BT/B/P/N/Q)...")
+                                print("Waiting for choice (BT/B/N/Q)...")
                                 choice_made = False
                                 while not choice_made:
                                     time.sleep(0.05)
@@ -772,14 +683,12 @@ class RFDVIMVisualizer:
                                             unique_residues = []
                                             seen = set()
                                             for res in stored.selected_residues:
-                                                if res[0] in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+                                                if res not in seen and res[0] in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
                                                     try:
                                                         chain, resnum = res
                                                         resnum = int(resnum)
-                                                        res_key = (chain, resnum)
-                                                        if res_key not in seen:
-                                                            unique_residues.append(res_key)
-                                                            seen.add(res_key)
+                                                        unique_residues.append((chain, resnum))
+                                                        seen.add((chain, resnum))
                                                     except (ValueError, TypeError):
                                                         continue
                                             
@@ -813,70 +722,11 @@ class RFDVIMVisualizer:
                                             # Force a redraw to show the updated visualization
                                             cmd.refresh()
                                             
-                                        elif new_state == 'P':
-                                            # Handle pocket toggle
-                                            from pymol import stored
-                                            stored.selected_residues = []
-                                            cmd.iterate("sele", "stored.selected_residues.append((chain, resi))")
-                                            
-                                            unique_residues = []
-                                            seen = set()
-                                            for res in stored.selected_residues:
-                                                if res[0] in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
-                                                    try:
-                                                        chain, resnum = res
-                                                        resnum = int(resnum)
-                                                        res_key = (chain, resnum)
-                                                        if res_key not in seen:
-                                                            unique_residues.append(res_key)
-                                                            seen.add(res_key)
-                                                    except (ValueError, TypeError):
-                                                        continue
-                                            
-                                            if not unique_residues:
-                                                print("No valid protein residues selected.")
-                                                self.reset_selection_state()
-                                                last_processed_selection = None
-                                                choice_made = False
-                                                continue
-                                            
-                                            # Toggle pocket status for all selected residues
-                                            added_count = 0
-                                            removed_count = 0
-                                            for chain, resnum in unique_residues:
-                                                res_key = (chain, resnum)
-                                                if res_key in self.pocket_residues:
-                                                    self.pocket_residues.remove(res_key)
-                                                    removed_count += 1
-                                                else:
-                                                    self.pocket_residues.add(res_key)
-                                                    added_count += 1
-                                            
-                                            if added_count > 0:
-                                                print(f"Added {added_count} residue(s) to pocket")
-                                            if removed_count > 0:
-                                                print(f"Removed {removed_count} residue(s) from pocket")
-                                            
-                                            # Immediately update visualization
-                                            self.visualize_current_states()
-                                            choice_made = True
-                                            
-                                            # COMPLETE RESET after change
-                                            self.reset_selection_state()
-                                            last_processed_selection = None
-                                            print("\n" + "="*40)
-                                            print("CHANGES APPLIED - READY FOR NEXT SELECTION")
-                                            print("="*40)
-                                            print("Select residue(s) and type choice, or type 'q' to finish...")
-                                            
-                                            # Force a redraw to show the updated visualization
-                                            cmd.refresh()
-                                            
                                         elif new_state in ['Q', 'DONE']:
                                             print("Exiting editing mode...")
                                             return
                                         else:
-                                            print("Invalid option. Use BT, B, P, N, or Q")
+                                            print("Invalid option. Use BT, B, N, or Q")
                                             
                         except Exception as e:
                             print(f"Error reading selected residue: {e}")
@@ -891,7 +741,7 @@ class RFDVIMVisualizer:
         """Get human-readable description of state"""
         descriptions = {
             'BT': 'Backbone + Type frozen (green sticks)',
-            'B': 'Backbone only frozen (orange lines)',
+            'B': 'Backbone only frozen (orange lines)', 
             'N': 'Not frozen (cyan cartoon)'
         }
         return descriptions.get(state, 'Unknown')
@@ -925,7 +775,7 @@ class RFDVIMVisualizer:
                 ranges = self.group_consecutive(residues)
                 for start, end in ranges:
                     if start == end:
-                        contigs_parts.append(f"{chain}{start}")
+                        contigs_parts.append(f"{chain}{start}-{start}")
                     else:
                         contigs_parts.append(f"{chain}{start}-{end}")
                         
@@ -941,7 +791,7 @@ class RFDVIMVisualizer:
                 ranges = self.group_consecutive(residues)
                 for start, end in ranges:
                     if start == end:
-                        inpaint_parts.append(f"{chain}{start}")
+                        inpaint_parts.append(f"{chain}{start}-{start}")
                     else:
                         inpaint_parts.append(f"{chain}{start}-{end}")
                         
@@ -949,34 +799,6 @@ class RFDVIMVisualizer:
         inpaint_str = "/".join(inpaint_parts) if inpaint_parts else ""
         
         return contigs_str, inpaint_str
-        
-    def generate_pocket_residues(self):
-        """Generate POCKET_RESIDUES string from current pocket residues set"""
-        # Get all pocket residues from the set
-        pocket_residues = list(self.pocket_residues)
-                    
-        # Sort residues
-        pocket_residues.sort()
-        
-        # Generate POCKET_RESIDUES string
-        pocket_parts = []
-        if pocket_residues:
-            chain_groups = defaultdict(list)
-            for chain, resnum in pocket_residues:
-                chain_groups[chain].append(resnum)
-                
-            for chain in sorted(chain_groups.keys()):
-                residues = sorted(chain_groups[chain])
-                ranges = self.group_consecutive(residues)
-                for start, end in ranges:
-                    if start == end:
-                        pocket_parts.append(f"{chain}{start}")
-                    else:
-                        pocket_parts.append(f"{chain}{start}-{end}")
-                        
-        pocket_str = "/".join(pocket_parts) if pocket_parts else ""
-        
-        return pocket_str
         
     def group_consecutive(self, numbers):
         """Group consecutive numbers into ranges"""
@@ -1001,7 +823,6 @@ class RFDVIMVisualizer:
     def save_settings(self, filename):
         """Save current CONTIGS and INPAINT_SEQ to file"""
         contigs_str, inpaint_str = self.generate_contigs_and_inpaint()
-        pocket_str = self.generate_pocket_residues()
         
         # Ensure we have a proper path (relative to current dir if not absolute)
         if not os.path.isabs(filename):
@@ -1018,7 +839,6 @@ class RFDVIMVisualizer:
                 with open(filename, 'w') as f:
                     f.write(f'CONTIGS="{contigs_str}"\n')
                     f.write(f'INPAINT_SEQ="{inpaint_str}"\n')
-                    f.write(f'POCKET_RESIDUES="{pocket_str}"\n')
                 print(f"Settings saved to {filename}")
                 return True
             except IOError as io_error:
@@ -1029,95 +849,11 @@ class RFDVIMVisualizer:
             import traceback
             traceback.print_exc()
             return False
-
-    def save_pse_for_rmsd(self):
-        """Save PyMOL session with RMSD reference objects"""
-        
-        # 1. Show current settings first (required for PSE saving to work)
-        self.show_current_settings()
-        
-        # 2. Ensure visualization is current
-        self.visualize_current_states()
-        
-        print("\n" + "="*60)
-        print("CREATING RMSD REFERENCE OBJECTS")
-        print("="*60)
-        
-        # 3. Create reference objects in PyMOL
-        objects_created = []
-        
-        try:
-            # Create pocket reference if pocket residues exist
-            if self.pocket_residues and cmd.count_atoms("pocket") > 0:
-                cmd.create("pocket_RMSD_ref", "pocket")
-                objects_created.append("pocket_RMSD_ref (pocket residues)")
-                print("✓ Created pocket_RMSD_ref")
-            else:
-                print("⚠ Skipping pocket_RMSD_ref (no pocket residues)")
-            
-            # Create MPNN reference if fully frozen residues exist
-            if cmd.count_atoms("frozen_bt") > 0:
-                cmd.create("MPNN_RMSD_ref", "frozen_bt")
-                objects_created.append("MPNN_RMSD_ref (fully frozen residues)")
-                print("✓ Created MPNN_RMSD_ref")
-            else:
-                print("⚠ Skipping MPNN_RMSD_ref (no fully frozen residues)")
-            
-            # Create combined selection and RFdiff reference
-            bt_atoms = cmd.count_atoms("frozen_bt") if cmd.count_atoms("frozen_bt") > 0 else 0
-            b_atoms = cmd.count_atoms("frozen_b") if cmd.count_atoms("frozen_b") > 0 else 0
-            
-            if bt_atoms > 0 or b_atoms > 0:
-                cmd.select("b_and_bt", "frozen_bt or frozen_b")
-                cmd.create("RFdiff_RMSD_ref", "b_and_bt")
-                objects_created.append("RFdiff_RMSD_ref (all frozen residues)")
-                print("✓ Created RFdiff_RMSD_ref")
-            else:
-                print("⚠ Skipping RFdiff_RMSD_ref (no frozen residues)")
-                
-        except Exception as e:
-            print(f"Error creating reference objects: {e}")
-            return False
-        
-        if not objects_created:
-            print("No reference objects could be created. Make sure you have residues in the appropriate states.")
-            return False
-            
-        print(f"\nCreated {len(objects_created)} RMSD reference objects:")
-        for obj in objects_created:
-            print(f"  - {obj}")
-        
-        # 4. Get filename and save
-        print("\n" + "="*60)
-        print("SAVING PYMOL SESSION")
-        print("="*60)
-        
-        filename = self.get_input("Enter PSE filename to save: ", allow_string=True).strip()
-        
-        if filename:
-            if not filename.endswith('.pse'):
-                filename += '.pse'
-                
-            # Handle relative paths
-            if not os.path.isabs(filename):
-                filename = os.path.join(self.current_dir, filename)
-                
-            try:
-                cmd.save(filename)
-                print(f"✓ PyMOL session saved to: {filename}")
-                print(f"✓ Contains {len(objects_created)} RMSD reference objects")
-                return True
-            except Exception as e:
-                print(f"Error saving PSE file: {e}")
-                return False
-        else:
-            print("No filename provided, PSE not saved")
-            return False
             
     def main_menu(self):
         """Main interactive menu"""
         print("\n" + "="*60)
-        print("RFD-VIM (RFDiffusion Visual Input Manager) - PSE Edition")
+        print("RFD-VIM (RFDiffusion Visual Input Manager)")
         print("="*60)
         print(f"Working directory: {self.current_dir}")
         
@@ -1142,20 +878,27 @@ class RFDVIMVisualizer:
         print("="*60)
         print("\nPyMOL Commands:")
         print("  Menu: '1', '2', '3', etc.")
-        print("  Editing: 'bt', 'b', 'p', 'n', 'q'")
+        print("  Editing: 'bt', 'b', 'n', 'q'")
         print("  Finish: 'done'")
         print("  Files: 'file filename' (replace 'filename' with actual path or file name)")
         print("\nChoose initial settings:")
-        print("1. Load from saved file")
-        print("2. Load from script file (.sbatch, .sh, etc.)")
+        print("1. Load from script file (.sbatch, .sh, etc.)")
+        print("2. Load from saved file")
         print("3. Start with empty settings")
-        print("6. Exit")
+        print("5. Exit")
         
         while True:
             self.pymol_input_mode = 'menu'
-            choice = self.get_input("\nEnter choice (1-3, 6): ", ['1', '2', '3', '6'])
+            choice = self.get_input("\nEnter choice (1-3, 5): ", ['1', '2', '3', '5'])
             
             if choice == '1':
+                script_file = self.get_input("Enter script file path: ", allow_string=True).strip()
+                if script_file:
+                    if not os.path.isabs(script_file):
+                        script_file = os.path.join(self.current_dir, script_file)
+                    self.load_from_script(script_file)
+                break
+            elif choice == '2':
                 save_file = self.get_input("Enter file path to load: ", allow_string=True).strip()
                 if save_file:
                     # Try with and without .txt extension
@@ -1175,17 +918,10 @@ class RFDVIMVisualizer:
                 else:
                     print("No filename provided, starting with empty settings")
                 break
-            elif choice == '2':
-                script_file = self.get_input("Enter script file path: ", allow_string=True).strip()
-                if script_file:
-                    if not os.path.isabs(script_file):
-                        script_file = os.path.join(self.current_dir, script_file)
-                    self.load_from_script(script_file)
-                break
             elif choice == '3':
                 print("Starting with empty settings")
                 break
-            elif choice == '6':
+            elif choice == '5':
                 print("Goodbye!")
                 cmd.quit()
                 pymol.finish_launching()
@@ -1205,19 +941,25 @@ class RFDVIMVisualizer:
                 print("="*60)
                 print("1. Interactive editing (click residues)")
                 print("2. Show current settings")
-                print("3. Load settings from file")
-                print("4. Save settings to file")
-                print("5. Save .pse file for RMSD calculations")
-                print("6. Exit")
+                print("3. Save settings to file")
+                print("4. Load settings from file")
+                print("5. Exit")
                 
                 self.pymol_input_mode = 'menu'
-                choice = self.get_input("\nEnter choice (1-6): ", ['1', '2', '3', '4', '5', '6'])
+                choice = self.get_input("\nEnter choice (1-5): ", ['1', '2', '3', '4', '5'])
                 
                 if choice == '1':
                     self.start_interactive_editing()
                 elif choice == '2':
                     self.show_current_settings()
                 elif choice == '3':
+                    filename = self.get_input("Enter filename to save: ", allow_string=True).strip()
+                    if filename:
+                        # Ensure file has extension if not provided
+                        if not filename.endswith('.txt'):
+                            filename += '.txt'
+                        self.save_settings(filename)
+                elif choice == '4':
                     filename = self.get_input("Enter filename to load: ", allow_string=True).strip()
                     if filename:
                         # Try with and without .txt extension
@@ -1236,16 +978,7 @@ class RFDVIMVisualizer:
                             print(f"File not found: {filename}")
                         
                         self.visualize_current_states()
-                elif choice == '4':
-                    filename = self.get_input("Enter filename to save: ", allow_string=True).strip()
-                    if filename:
-                        # Ensure file has extension if not provided
-                        if not filename.endswith('.txt'):
-                            filename += '.txt'
-                        self.save_settings(filename)
                 elif choice == '5':
-                    self.save_pse_for_rmsd()
-                elif choice == '6':
                     print("Goodbye!")
                     break
                 else:
@@ -1262,25 +995,21 @@ class RFDVIMVisualizer:
     def show_current_settings(self):
         """Show current CONTIGS and INPAINT_SEQ"""
         contigs_str, inpaint_str = self.generate_contigs_and_inpaint()
-        pocket_str = self.generate_pocket_residues()
         
         print("\n" + "="*50)
         print("CURRENT SETTINGS")
         print("="*50)
         print(f'CONTIGS="{contigs_str}"')
         print(f'INPAINT_SEQ="{inpaint_str}"')
-        print(f'POCKET_RESIDUES="{pocket_str}"')
         print("")
         
         bt_count = len([s for s in self.residue_states.values() if s == 'BT'])
         b_count = len([s for s in self.residue_states.values() if s == 'B'])
-        p_count = len(self.pocket_residues)
         n_count = len([s for s in self.residue_states.values() if s == 'N'])
         
         print(f"Summary:")
         print(f"  Fully frozen (BT): {bt_count} residues")
         print(f"  Backbone only (B): {b_count} residues") 
-        print(f"  Pocket residues (P): {p_count} residues")
         print(f"  Not frozen (N): {n_count} residues")
         
         self.visualize_current_states()
@@ -1304,38 +1033,25 @@ class RFDVIMVisualizer:
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description='RFD-VIM (RFDiffusion Visual Input Manager) - PSE Edition')
+    parser = argparse.ArgumentParser(description='RFD-VIM (RFDiffusion Visual Input Manager)')
     parser.add_argument('--help-usage', action='store_true', help='Show detailed usage information')
     
     args = parser.parse_args()
     
     if args.help_usage:
-        print("RFD-VIM (RFDiffusion Visual Input Manager) - PSE Edition")
+        print("RFD-VIM (RFDiffusion Visual Input Manager)")
         print("=" * 50)
         print("This tool allows you to interactively edit RFDiffusion CONTIGS and INPAINT_SEQ parameters")
         print("for any protein structure and any input configuration.")
         print("")
-        print("Usage: python rfd-vim-pocket-pse.py")
+        print("Usage: python rfd-vim.py")
         print("")
         print("Features:")
         print("- Load any PDB file")
         print("- Load settings from any script file containing CONTIGS and INPAINT_SEQ")
         print("- Click residues in PyMOL to change their freeze status")
-        print("- Mark residues as pocket residues (P) for special handling")
         print("- Save/load session files")
         print("- Generate clean CONTIGS and INPAINT_SEQ output")
-        print("- Save PSE files with RMSD reference objects")
-        print("")
-        print("Residue States:")
-        print("- BT: Backbone + Type frozen (green sticks)")
-        print("- B: Backbone only frozen (orange lines)")
-        print("- P: Pocket residue (dark green sticks)")
-        print("- N: Not frozen (cyan cartoon)")
-        print("")
-        print("RMSD Reference Objects:")
-        print("- pocket_RMSD_ref: Pocket residues")
-        print("- MPNN_RMSD_ref: Fully frozen residues")
-        print("- RFdiff_RMSD_ref: All frozen residues")
         return
     
     try:
